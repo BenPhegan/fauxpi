@@ -1,34 +1,9 @@
 package main
 
 import (
-	"github.com/elazarl/goproxy"
-	"net/http"
+	"strconv"
 	"testing"
 )
-
-func Test_StubSource(t *testing.T) {
-	var source = new(StubSource)
-	if len(source.Stubs()) == 1 {
-		t.Log("Passed")
-	} else {
-		t.Error("Failed")
-	}
-}
-
-func Test_StubResolver(t *testing.T) {
-	var source = new(StubSource)
-	var resolver = new(StubResolver)
-	resolver.StubSource = source
-	var request = new(http.Request)
-	request.RequestURI = "http://google.com/"
-	var context = new(goproxy.ProxyCtx)
-	if resolver.CheckUrlAgainstStub().HandleReq(request, context) == true {
-		t.Log("Passed")
-	} else {
-		t.Error("Failed")
-	}
-
-}
 
 type filenameParams struct {
 	Protocol string
@@ -48,7 +23,7 @@ type filenameTests struct {
 }
 
 //HTTP/1.1,google.com,/test,GET
-var tests = []filenameTests{
+var fileTests = []filenameTests{
 	{
 		filenameParams{"HTTP/1.1", "www.google.com", "/", "GET"},
 		filenameResults{"http/www.google.com/index.get.json", "index.get.json"},
@@ -72,13 +47,40 @@ var tests = []filenameTests{
 }
 
 func Test_MultipleHostFileNameCreation(t *testing.T) {
-	for _, tt := range tests {
+	for _, tt := range fileTests {
 		var hostfilename, filename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method)
 		if hostfilename != tt.Out.HostFilename {
 			t.Error("Expected: " + tt.Out.HostFilename + " but got : " + hostfilename)
 		}
 		if filename != tt.Out.Filename {
 			t.Error("Expected: " + tt.Out.Filename + " but got : " + filename)
+		}
+	}
+}
+
+var statusCodeTests = []struct {
+	text       string
+	statusCode int
+}{
+	{
+		text:       "//! statusCode: 201 <html> <body>Created something successfully! Happy!</body></html>",
+		statusCode: 201,
+	},
+	{
+		text:       "//! statusCode: 500 <html> <body>BOOM</body></html>",
+		statusCode: 500,
+	},
+	{
+		text:       "<html> <body>BOOM</body></html>",
+		statusCode: 200,
+	},
+}
+
+func Test_CanCreateCustomStatusCodes(t *testing.T) {
+	for _, tt := range statusCodeTests {
+		response := resolveStatusCode(tt.text)
+		if response != tt.statusCode {
+			t.Error("Expected: " + strconv.Itoa(tt.statusCode) + " but got : " + strconv.Itoa(response))
 		}
 	}
 }
