@@ -1,14 +1,9 @@
 package main
 
 import (
-	"errors"
 	"github.com/elazarl/goproxy"
-	"log"
 	"net/http"
-	"net/url"
-	"os"
 	"testing"
-	"time"
 )
 
 func Test_StubSource(t *testing.T) {
@@ -35,64 +30,47 @@ func Test_StubResolver(t *testing.T) {
 
 }
 
-func Test_UrlChecker(t *testing.T) {
-	var resolver = new(StubResolver)
-	resolver.FileChecker = MockFileResolver
-	var request = new(http.Request)
-	request.RequestURI = "http://google.com/"
-	var requestUrl, _ = url.Parse("http://google.com/")
-	request.URL = requestUrl
-	request.URL.Path = ""
-	var context = new(goproxy.ProxyCtx)
-	proxy := ReturnMockProxy()
-	if resolver.CheckFilesystemForRequest().HandleReq(request, context) == true {
-		t.Log("Passed")
-	} else {
-		t.Error("Failed")
+type filenameParams struct {
+	Protocol string
+	Host     string
+	Path     string
+	Method   string
+}
+
+type filenameResults struct {
+	HostFilename string
+	Filename     string
+}
+
+type filenameTests struct {
+	In  filenameParams
+	Out filenameResults
+}
+
+//HTTP/1.1,google.com,/test,GET
+var tests = []filenameTests{
+	{
+		filenameParams{"HTTP/1.1", "www.google.com", "/", "GET"},
+		filenameResults{"http/www.google.com/index.get.json", "index.get.json"},
+	},
+	{
+		filenameParams{"HTTP/1.1", "www.google.com", "/search", "GET"},
+		filenameResults{"http/www.google.com/_search.get.json", "_search.get.json"},
+	},
+	{
+		filenameParams{"HTTP/1.1", "www.google.com", "/comments/", "GET"},
+		filenameResults{"http/www.google.com/comments/index.get.json", "comments/index.get.json"},
+	},
+}
+
+func Test_MultipleHostFileNameCreation(t *testing.T) {
+	for _, tt := range tests {
+		var hostfilename, filename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method)
+		if hostfilename != tt.Out.HostFilename {
+			t.Error("Expected: " + tt.Out.HostFilename + " but got : " + hostfilename)
+		}
+		if filename != tt.Out.Filename {
+			t.Error("Expected: " + tt.Out.Filename + " but got : " + filename)
+		}
 	}
-
-}
-
-func Test_HostFileNameCreation(t *testing.T) {
-	var hostfilename, filename = constructFilename("HTTP/1.1", "www.google.com", "", "GET")
-	if hostfilename != "http/www.google.com/index.get.json" {
-		t.Failed()
-	}
-}
-
-func MockFileResolver(name string) (fi os.FileInfo, err error) {
-	if name == "http/www.google.com/index.get.json" {
-		return new(MockFileInfo), nil
-	} else {
-		return nil, errors.New("File not found")
-	}
-}
-
-type MockFileInfo struct{}
-
-func (m MockFileInfo) Name() string {
-	return ""
-}
-func (m MockFileInfo) Size() int64 {
-	return 1
-}
-func (m MockFileInfo) Mode() os.FileMode {
-	return 1
-}
-func (m MockFileInfo) ModTime() time.Time {
-	time := new(time.Time)
-	return *time
-}
-func (m MockFileInfo) IsDir() bool {
-	return false
-}
-func (m MockFileInfo) Sys() interface{} {
-	return nil
-}
-
-func ReturnMockProxy() goproxy.ProxyHttpServer {
-	proxy := goproxy.ProxyHttpServer{
-		Logger: log.New(os.Stderr, "", log.LstdFlags),
-	}
-	return proxy
 }

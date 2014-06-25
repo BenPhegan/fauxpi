@@ -42,13 +42,10 @@ func (ss StubSource) Stubs() []Stub {
 func (sr StubResolver) CheckUrlAgainstStub() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
 		for _, s := range sr.StubSource.Stubs() {
-			//ctx.Logf("STUB: " + s.Match)
-			//ctx.Logf("REQUEST: " + req.RequestURI)
 			if s.Match == req.RequestURI {
 				return true
 			}
 		}
-
 		return false
 	}
 }
@@ -57,8 +54,9 @@ type ResponseGenerator func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 
 func (sr StubResolver) CheckFilesystemForRequest() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-
+		ctx.Logf(req.Proto + "," + req.Host + "," + req.URL.Path + "," + req.Method)
 		var hostfilename, filename = constructFilename(req.Proto, req.Host, req.URL.Path, req.Method)
+
 		ctx.Logf(hostfilename)
 		if _, err := sr.FileChecker(filename); err == nil {
 			ctx.Logf("***FOUND FILE***")
@@ -72,12 +70,12 @@ func constructFilename(proto string, host string, reqPath string, method string)
 	verb := strings.ToLower(method)
 	protocol := strings.ToLower(strings.Split(proto, "/")[0])
 	urlpath := reqPath
-	if strings.HasSuffix(reqPath, "/") {
+	if strings.HasSuffix(urlpath, "/") {
 		urlpath = urlpath + "index"
 	} else {
 		//parts := strings.Split(urlpath, "/")
 		//newparts := len(parts)
-		urlpath = "_" + urlpath
+		urlpath = "/_" + strings.TrimLeft(urlpath, "/")
 	}
 
 	hostfilename := path.Clean("./" + protocol + "/" + host + "/" + urlpath + "." + verb + ".json")
