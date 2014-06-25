@@ -17,6 +17,7 @@ func main() {
 	//record := flag.Bool("r", false, "Record request/response pairs to disk.")
 	//useHost := flag.Bool("h", false, "Reference files using protocol and host")
 	noStubbing := flag.Bool("o", false, "Dont stub any calls")
+	port := flag.String("port", "8080", "Port to listen on.")
 
 	flag.Parse()
 
@@ -31,7 +32,7 @@ func main() {
 		proxy.OnRequest(stubResolver.CheckFilesystemForRequest()).DoFunc(stubResolver.ReturnFileResponse())
 	}
 
-	log.Fatal(http.ListenAndServe(":8090", proxy))
+	log.Fatal(http.ListenAndServe(":"+*port, proxy))
 	fmt.Printf("AND GONE")
 }
 
