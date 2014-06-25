@@ -61,6 +61,14 @@ var tests = []filenameTests{
 		filenameParams{"HTTP/1.1", "www.google.com", "/comments/", "GET"},
 		filenameResults{"http/www.google.com/comments/index.get.json", "comments/index.get.json"},
 	},
+	{
+		filenameParams{"HTTP/1.1", "www.google.com", "/comments/7", "GET"},
+		filenameResults{"http/www.google.com/comments/any.get.json", "comments/any.get.json"},
+	},
+	{
+		filenameParams{"HTTP/1.1", "www.google.com", "/7", "GET"},
+		filenameResults{"http/www.google.com/any.get.json", "any.get.json"},
+	},
 }
 
 func Test_MultipleHostFileNameCreation(t *testing.T) {

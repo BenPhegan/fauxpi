@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/elazarl/goproxy"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -15,11 +16,9 @@ func main() {
 	proxy.Verbose = true
 
 	stubResolver := new(StubResolver)
-	stubSoure := new(StubSource)
 	fileChecker := os.Stat
-	stubResolver.StubSource = stubSoure
 	stubResolver.FileChecker = fileChecker
-	proxy.OnRequest(stubResolver.CheckFilesystemForRequest()).DoFunc(stubResolver.ReturnResponse())
+	proxy.OnRequest(stubResolver.CheckFilesystemForRequest()).DoFunc(stubResolver.ReturnFileResponse())
 
 	log.Fatal(http.ListenAndServe(":8090", proxy))
 	fmt.Printf("AND GONE")
@@ -59,7 +58,6 @@ func (sr StubResolver) CheckFilesystemForRequest() goproxy.ReqConditionFunc {
 
 		ctx.Logf(hostfilename)
 		if _, err := sr.FileChecker(filename); err == nil {
-			ctx.Logf("***FOUND FILE***")
 			return true
 		}
 		return false
@@ -73,8 +71,6 @@ func constructFilename(proto string, host string, reqPath string, method string)
 	if strings.HasSuffix(urlpath, "/") {
 		urlpath = urlpath + "index"
 	} else {
-		//parts := strings.Split(urlpath, "/")
-		//newparts := len(parts)
 		urlpath = "/_" + strings.TrimLeft(urlpath, "/")
 	}
 
@@ -96,6 +92,15 @@ func (sr StubResolver) ReturnResponse() ResponseGenerator {
 		}
 
 		return nil, nil
+	}
+}
+
+func (sr StubResolver) ReturnFileResponse() ResponseGenerator {
+	return func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		var _, filename = constructFilename(r.Proto, r.Host, r.URL.Path, r.Method)
+		var fileContent, _ = ioutil.ReadFile(filename)
+		fileContentString := string(fileContent[:])
+		return r, goproxy.NewResponse(r, "application/json", http.StatusOK, fileContentString)
 	}
 }
 
