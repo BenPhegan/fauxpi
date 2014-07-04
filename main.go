@@ -11,11 +11,11 @@ import (
 
 func main() {
 
-	//record := flag.Bool("r", false, "Record request/response pairs to disk.")
+	record := flag.Bool("r", false, "Record request/response pairs to disk.")
 	useHost := flag.Bool("h", false, "Reference files using protocol and host")
 	noStubbing := flag.Bool("o", false, "Dont stub any calls")
 	port := flag.String("port", "8080", "Port to listen on.")
-	stubRoot := flag.String("r", "", "The directory root for your stubs")
+	stubRoot := flag.String("d", "", "The directory root for your stubs")
 
 	flag.Parse()
 
@@ -40,6 +40,10 @@ func main() {
 
 	if !*noStubbing {
 		proxy.OnRequest(stubResolver.CheckFilesystemForRequest()).DoFunc(stubResolver.ReturnFileResponse())
+	}
+
+	if *record {
+		proxy.OnResponse().DoFunc(stubResolver.RecordResponse())
 	}
 
 	log.Fatal(http.ListenAndServe(":"+*port, proxy))

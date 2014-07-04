@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"github.com/elazarl/goproxy"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -78,4 +80,78 @@ func resolveStatusCode(s string) int {
 
 func stripMetaData(s string) string {
 	return s
+}
+
+type ResponseFunc func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
+
+func (sr StubResolver) RecordResponse() ResponseFunc {
+	return func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		var filename = constructFilename(ctx.Req.Proto, ctx.Req.Host, ctx.Req.URL.Path, ctx.Req.Method, sr.UseHostAndProtocol, sr.StubRoot)
+		saveResponse(resp, ctx, filename)
+		return resp
+	}
+}
+
+func saveResponse(resp *http.Response, ctx *goproxy.ProxyCtx, filename string) {
+	if resp != nil {
+		//TODO Cleanup error
+		ctx.Logf("Writing response to here: " + filename)
+		f, _ := os.Create(filename)
+		defer f.Close()
+
+		resp.Body = NewTeeReadCloser(resp.Body, NewFileStream(filename))
+		f.Sync()
+	}
+}
+
+type TeeReadCloser struct {
+	r io.Reader
+	w io.WriteCloser
+	c io.Closer
+}
+
+func NewTeeReadCloser(r io.ReadCloser, w io.WriteCloser) io.ReadCloser {
+	return &TeeReadCloser{io.TeeReader(r, w), w, r}
+}
+
+func (t *TeeReadCloser) Read(b []byte) (int, error) {
+	return t.r.Read(b)
+}
+
+func (t *TeeReadCloser) Close() error {
+	err1 := t.c.Close()
+	err2 := t.w.Close()
+	if err1 == nil && err2 == nil {
+		return nil
+	}
+	if err1 != nil {
+		return err2
+	}
+	return err1
+}
+
+type FileStream struct {
+	path string
+	f    *os.File
+}
+
+func NewFileStream(path string) *FileStream {
+	return &FileStream{path, nil}
+}
+
+func (fs *FileStream) Write(b []byte) (nr int, err error) {
+	if fs.f == nil {
+		fs.f, err = os.Create(fs.path)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return fs.f.Write(b)
+}
+
+func (fs *FileStream) Close() error {
+	if fs.f == nil {
+		return errors.New("FileStream was never written into")
+	}
+	return fs.f.Close()
 }
