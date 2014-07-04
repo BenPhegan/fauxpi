@@ -11,13 +11,16 @@ import (
 )
 
 type StubResolver struct {
-	FileChecker FileChecker
+	FileChecker        FileChecker
+	UseHostAndProtocol bool
+	StubRoot           string
 }
 
 func (sr StubResolver) ReturnFileResponse() ResponseGenerator {
 	return func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		var _, filename = constructFilename(r.Proto, r.Host, r.URL.Path, r.Method)
-		var fileContent, _ = ioutil.ReadFile(filename)
+		var resolvedFilename = constructFilename(r.Proto, r.Host, r.URL.Path, r.Method, sr.UseHostAndProtocol, sr.StubRoot)
+
+		var fileContent, _ = ioutil.ReadFile(resolvedFilename)
 		fileContentString := string(fileContent[:])
 		statusCode := resolveStatusCode(fileContentString)
 
@@ -29,7 +32,7 @@ func (sr StubResolver) ReturnFileResponse() ResponseGenerator {
 
 func (sr StubResolver) CheckFilesystemForRequest() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-		var _, filename = constructFilename(req.Proto, req.Host, req.URL.Path, req.Method)
+		var filename = constructFilename(req.Proto, req.Host, req.URL.Path, req.Method, sr.UseHostAndProtocol, sr.StubRoot)
 		if _, err := sr.FileChecker(filename); err == nil {
 			return true
 		}
@@ -39,7 +42,7 @@ func (sr StubResolver) CheckFilesystemForRequest() goproxy.ReqConditionFunc {
 
 type ResponseGenerator func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response)
 
-func constructFilename(proto string, host string, reqPath string, method string) (string, string) {
+func constructFilename(proto string, host string, reqPath string, method string, useHostAndProtocol bool, basePath string) string {
 	verb := strings.ToLower(method)
 	protocol := strings.ToLower(strings.Split(proto, "/")[0])
 	urlpath := reqPath
@@ -49,10 +52,14 @@ func constructFilename(proto string, host string, reqPath string, method string)
 		urlpath = "/_" + strings.TrimLeft(urlpath, "/")
 	}
 
-	hostfilename := path.Clean("./" + protocol + "/" + host + "/" + urlpath + "." + verb + ".json")
-	filename := path.Clean("./" + urlpath + "." + verb + ".json")
+	hostfilename := path.Join(basePath, path.Clean("./"+protocol+"/"+host+"/"+urlpath+"."+verb+".json"))
+	filename := path.Join(basePath, path.Clean("./"+urlpath+"."+verb+".json"))
 
-	return hostfilename, filename
+	if useHostAndProtocol {
+		return hostfilename
+	} else {
+		return filename
+	}
 }
 
 type FileChecker func(name string) (fi os.FileInfo, err error)
