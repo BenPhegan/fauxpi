@@ -48,8 +48,8 @@ var fileTests = []filenameTests{
 
 func Test_MultipleHostFileNameCreation(t *testing.T) {
 	for _, tt := range fileTests {
-		var filename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method, false)
-		var hostfilename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method, true)
+		var filename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method, false, "")
+		var hostfilename = constructFilename(tt.In.Protocol, tt.In.Host, tt.In.Path, tt.In.Method, true, "")
 		if hostfilename != tt.Out.HostFilename {
 			t.Skip("Expected: " + tt.Out.HostFilename + " but got : " + hostfilename)
 		}
