@@ -1,7 +1,7 @@
 fauxpi fake API proxy server
 ============================
 
-[![Build Status](https://travis-ci.org/BenPhegan/fauxpi.svg?branch=master)](https://travis-ci.org/BenPhegan/fauxpi)
+[![Build Status](https://drone.io/github.com/BenPhegan/fauxpi/status.png)](https://drone.io/github.com/BenPhegan/fauxpi/latest)
 
 When working with APIs, more often than not during development you want to work
 with a fixed version of the responses provided. This is especially true if the
