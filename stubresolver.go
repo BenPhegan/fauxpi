@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -87,15 +88,18 @@ type ResponseFunc func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Respons
 func (sr StubResolver) RecordResponse() ResponseFunc {
 	return func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 		var filename = constructFilename(ctx.Req.Proto, ctx.Req.Host, ctx.Req.URL.Path, ctx.Req.Method, sr.UseHostAndProtocol, sr.StubRoot)
-		saveResponse(resp, ctx, filename)
+		sr.saveResponse(resp, ctx, filename)
 		return resp
 	}
 }
 
-func saveResponse(resp *http.Response, ctx *goproxy.ProxyCtx, filename string) {
+func (sr StubResolver) saveResponse(resp *http.Response, ctx *goproxy.ProxyCtx, filename string) {
 	if resp != nil {
 		//TODO Cleanup error
 		ctx.Logf("Writing response to here: " + filename)
+		if _, err := sr.FileChecker(filepath.Dir(filename)); err != nil {
+			os.MkdirAll(filepath.Dir(filename), 0600)
+		}
 		f, _ := os.Create(filename)
 		defer f.Close()
 
