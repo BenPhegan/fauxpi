@@ -46,6 +46,7 @@ func (sr StubResolver) CheckFilesystemForRequest() goproxy.ReqConditionFunc {
 type ResponseGenerator func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response)
 
 func constructFilename(proto string, host string, reqPath string, method string, useHostAndProtocol bool, basePath string) string {
+	slash := string(os.PathSeparator)
 	verb := strings.ToLower(method)
 	protocol := strings.ToLower(strings.Split(proto, "/")[0])
 	urlpath := reqPath
@@ -55,8 +56,8 @@ func constructFilename(proto string, host string, reqPath string, method string,
 		urlpath = "/_" + strings.TrimLeft(urlpath, "/")
 	}
 
-	hostfilename := path.Join(basePath, path.Clean("./"+protocol+"/"+host+"/"+urlpath+"."+verb+".json"))
-	filename := path.Join(basePath, path.Clean("./"+urlpath+"."+verb+".json"))
+	hostfilename := path.Join(basePath, path.Clean("."+slash+protocol+slash+host+slash+urlpath+"."+verb+".json"))
+	filename := path.Join(basePath, path.Clean("."+slash+urlpath+"."+verb+".json"))
 
 	if useHostAndProtocol {
 		return hostfilename
