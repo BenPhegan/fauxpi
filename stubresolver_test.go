@@ -65,15 +65,22 @@ var statusCodeTests = []struct {
 	statusCode int
 }{
 	{
-		text:       "//! statusCode: 201 <html> <body>Created something successfully! Happy!</body></html>",
+		text: `//! statusCode: 201 
+					<html> <body>Created something successfully! Happy!</body></html>`,
 		statusCode: 201,
 	},
 	{
-		text:       "//! statusCode: 500 <html> <body>BOOM</body></html>",
+		text: `//! otherthing: blah statusCode: 201 
+					<html> <body>Created something successfully! Happy!</body></html>`,
+		statusCode: 201,
+	},
+	{
+		text: `//! statusCode: 500 
+		<html> <body>BOOM</body></html>`,
 		statusCode: 500,
 	},
 	{
-		text:       "<html> <body>BOOM</body></html>",
+		text:       `<html> <body>BOOM</body></html>`,
 		statusCode: 200,
 	},
 }

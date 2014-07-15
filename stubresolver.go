@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -69,13 +70,11 @@ func constructFilename(proto string, host string, reqPath string, method string,
 type FileChecker func(name string) (fi os.FileInfo, err error)
 
 func resolveStatusCode(s string) int {
-	prefix := "//! statusCode: "
-	if strings.HasPrefix(s, prefix) {
-		stringval := strings.TrimLeft(s, prefix)[:3]
-		status, err := strconv.Atoi(stringval)
-		if err == nil {
-			return status
-		}
+	regex := regexp.MustCompile(`//!.+statusCode:\s+(\d{3})`)
+	result := regex.FindStringSubmatch(s)
+	if len(result) > 0 {
+		intresult, _ := strconv.Atoi(result[1])
+		return intresult
 	}
 	return 200
 }
