@@ -80,6 +80,10 @@ func resolveStatusCode(s string) int {
 }
 
 func stripMetaData(s string) string {
+	if strings.HasPrefix(s, "//!") {
+		stringarray := strings.SplitAfterN(s, "\n", 2)
+		return stringarray[1]
+	}
 	return s
 }
 

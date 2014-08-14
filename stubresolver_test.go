@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -90,6 +91,15 @@ func Test_CanCreateCustomStatusCodes(t *testing.T) {
 		response := resolveStatusCode(tt.text)
 		if response != tt.statusCode {
 			t.Error("Expected: " + strconv.Itoa(tt.statusCode) + " but got : " + strconv.Itoa(response))
+		}
+	}
+}
+
+func Test_CanClearStatusCodeText(t *testing.T) {
+	for _, tt := range statusCodeTests {
+		response := stripMetaData(tt.text)
+		if strings.Contains(response, "//!") {
+			t.Error("Failed to clean status code")
 		}
 	}
 }
