@@ -102,7 +102,7 @@ func (sr StubResolver) saveResponse(resp *http.Response, ctx *goproxy.ProxyCtx, 
 		//TODO Cleanup error
 		ctx.Logf("Writing response to here: " + filename)
 		if _, err := sr.FileChecker(filepath.Dir(filename)); err != nil {
-			os.MkdirAll(filepath.Dir(filename), 0600)
+			os.MkdirAll(filepath.Dir(filename), 0777)
 		}
 		f, _ := os.Create(filename)
 		defer f.Close()
