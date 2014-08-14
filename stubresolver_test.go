@@ -81,6 +81,11 @@ var statusCodeTests = []struct {
 		statusCode: 500,
 	},
 	{
+		text: `//! statusCode:500 
+		<html> <body>BOOM</body></html>`,
+		statusCode: 500,
+	},
+	{
 		text:       `<html> <body>BOOM</body></html>`,
 		statusCode: 200,
 	},

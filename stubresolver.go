@@ -70,7 +70,7 @@ func constructFilename(proto string, host string, reqPath string, method string,
 type FileChecker func(name string) (fi os.FileInfo, err error)
 
 func resolveStatusCode(s string) int {
-	regex := regexp.MustCompile(`//!.+statusCode:\s+(\d{3})`)
+	regex := regexp.MustCompile(`//!.+statusCode:\s*(\d{3})`)
 	result := regex.FindStringSubmatch(s)
 	if len(result) > 0 {
 		intresult, _ := strconv.Atoi(result[1])
